@@ -1,5 +1,5 @@
 # Backend Dockerfile - ASP.NET Core 10.0
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0-preview AS build
 WORKDIR /src
 
 # Copy solution and project files for restore
