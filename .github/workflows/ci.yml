@@ -1,0 +1,160 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # バックエンドのビルドとテスト
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: addressbook_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        dotnet-quality: 'preview'
+    
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: ./backend
+    
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+      working-directory: ./backend
+    
+    - name: Run unit tests
+      run: dotnet test --no-build --configuration Release --verbosity normal --filter "Category!=Integration"
+      working-directory: ./backend
+      env:
+        ConnectionStrings__DefaultConnection: "Host=localhost;Database=addressbook_test;Username=test;Password=test"
+    
+    - name: Run integration tests
+      run: dotnet test --no-build --configuration Release --verbosity normal --filter "Category=Integration"
+      working-directory: ./backend
+      env:
+        ConnectionStrings__DefaultConnection: "Host=localhost;Database=addressbook_test;Username=test;Password=test"
+    
+    - name: Run property-based tests
+      run: dotnet test --no-build --configuration Release --verbosity normal --filter "Category=Property"
+      working-directory: ./backend
+      env:
+        ConnectionStrings__DefaultConnection: "Host=localhost;Database=addressbook_test;Username=test;Password=test"
+
+  # フロントエンドのビルドとテスト
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: ./frontend/package-lock.json
+    
+    - name: Install dependencies
+      run: npm ci
+      working-directory: ./frontend
+    
+    - name: Run linter
+      run: npm run lint
+      working-directory: ./frontend
+    
+    - name: Run unit tests
+      run: npm run test
+      working-directory: ./frontend
+    
+    - name: Build
+      run: npm run build
+      working-directory: ./frontend
+      env:
+        VITE_API_BASE_URL: http://localhost:5147
+
+  # セキュリティスキャン
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        dotnet-quality: 'preview'
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: .NET security audit
+      run: dotnet list package --vulnerable --include-transitive
+      working-directory: ./backend
+      continue-on-error: true
+    
+    - name: Node.js security audit
+      run: npm audit --audit-level moderate
+      working-directory: ./frontend
+      continue-on-error: true
+
+  # Dockerイメージのビルド確認
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: false
+        tags: addressbook-backend:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Build frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile
+        push: false
+        tags: addressbook-frontend:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
