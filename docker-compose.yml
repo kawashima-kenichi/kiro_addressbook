@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:18
+    container_name: addressbook-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-address_book}
+      POSTGRES_USER: ${POSTGRES_USER:-addressbook}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-addressbook} -d ${POSTGRES_DB:-address_book}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: addressbook-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: "Host=db;Database=${POSTGRES_DB:-address_book};Username=${POSTGRES_USER:-addressbook};Password=${POSTGRES_PASSWORD:-devpassword}"
+      Jwt__Secret: ${JWT_SECRET:-dev_jwt_secret_key_minimum_32_characters}
+      Jwt__Issuer: ${JWT_ISSUER:-AddressBookAPI}
+      Jwt__Audience: ${JWT_AUDIENCE:-AddressBookClient}
+      Jwt__ExpiryHours: ${JWT_EXPIRY_HOURS:-24}
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: addressbook-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

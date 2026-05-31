@@ -1,0 +1,36 @@
+services:
+  test-db:
+    image: postgres:18
+    container_name: addressbook-test-db
+    environment:
+      POSTGRES_DB: address_book_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d address_book_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  test-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: addressbook-test-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Testing
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: "Host=test-db;Database=address_book_test;Username=test;Password=test"
+      Jwt__Secret: test_jwt_secret_key_minimum_32_characters
+      Jwt__Issuer: AddressBookAPI
+      Jwt__Audience: AddressBookClient
+      Jwt__ExpiryHours: 24
+    ports:
+      - "5001:5000"
+    depends_on:
+      test-db:
+        condition: service_healthy

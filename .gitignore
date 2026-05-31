@@ -1,0 +1,58 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.log
+*.dll
+*.pdb
+*.exe
+[Dd]ebug/
+[Rr]elease/
+[Bb]uild/
+[Ll]og/
+[Ll]ogs/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+.vite/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+.dockerignore
+
+# Test results
+TestResults/
+coverage/
+*.trx
+*.coverage
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# OS
+Thumbs.db
+.DS_Store

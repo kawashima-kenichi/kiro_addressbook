@@ -1,0 +1,97 @@
+### Variables
+@baseUrl = http://localhost:5000
+@token = YOUR_JWT_TOKEN_HERE
+
+### 1. Login to get token
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test@1234"
+}
+
+### 2. Get all contacts (with pagination)
+GET {{baseUrl}}/api/contacts?page=1&pageSize=50
+Authorization: Bearer {{token}}
+
+### 3. Get all contacts (sorted by name descending)
+GET {{baseUrl}}/api/contacts?page=1&pageSize=50&sortBy=name_desc
+Authorization: Bearer {{token}}
+
+### 4. Get contact by ID
+GET {{baseUrl}}/api/contacts/CONTACT_ID_HERE
+Authorization: Bearer {{token}}
+
+### 5. Create a new contact
+POST {{baseUrl}}/api/contacts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "田中太郎",
+  "address": "東京都渋谷区",
+  "phoneNumber": "03-1234-5678"
+}
+
+### 6. Create contact with minimal data (name only)
+POST {{baseUrl}}/api/contacts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "山田花子"
+}
+
+### 7. Update a contact
+PUT {{baseUrl}}/api/contacts/CONTACT_ID_HERE
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "田中太郎",
+  "address": "東京都新宿区",
+  "phoneNumber": "03-9876-5432"
+}
+
+### 8. Delete a contact
+DELETE {{baseUrl}}/api/contacts/CONTACT_ID_HERE
+Authorization: Bearer {{token}}
+
+### 9. Test validation - empty name (should fail)
+POST {{baseUrl}}/api/contacts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "",
+  "address": "東京都"
+}
+
+### 10. Test validation - invalid phone number (should fail)
+POST {{baseUrl}}/api/contacts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "テストユーザー",
+  "phoneNumber": "invalid-phone"
+}
+
+### 11. Test validation - name too long (should fail)
+POST {{baseUrl}}/api/contacts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ"
+}
+
+### 12. Test duplicate name (should fail on second attempt)
+POST {{baseUrl}}/api/contacts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "重複テスト"
+}
