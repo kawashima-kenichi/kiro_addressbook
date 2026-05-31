@@ -1,5 +1,5 @@
 # Frontend Dockerfile - Vue.js 3 + Vite
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 
 # Copy package files for dependency install
